@@ -1,4 +1,4 @@
-import { PreviewMessage, ThinkingMessage } from './message';
+import { Message, MessageContent } from '@/components/message';
 import type { Vote } from '@/lib/db/schema';
 import { memo } from 'react';
 import equal from 'fast-deep-equal';
@@ -7,6 +7,8 @@ import type { UseChatHelpers } from '@ai-sdk/react';
 import { motion } from 'framer-motion';
 import { useMessages } from '@/hooks/use-messages';
 import type { ChatMessage } from '@/lib/types';
+import { Conversation, ConversationContent, ConversationScrollButton } from './conversation';
+import { Response } from './response';
 
 interface ArtifactMessagesProps {
   chatId: string;
@@ -40,41 +42,22 @@ function PureArtifactMessages({
   });
 
   return (
-    <div
-      ref={messagesContainerRef}
-      className="flex flex-col gap-4 h-full items-center overflow-y-scroll px-4 pt-20"
-    >
-      {messages.map((message, index) => (
-        <PreviewMessage
-          chatId={chatId}
-          key={message.id}
-          message={message}
-          isLoading={status === 'streaming' && index === messages.length - 1}
-          vote={
-            votes
-              ? votes.find((vote) => vote.messageId === message.id)
-              : undefined
-          }
-          setMessages={setMessages}
-          regenerate={regenerate}
-          isReadonly={isReadonly}
-          requiresScrollPadding={
-            hasSentMessage && index === messages.length - 1
-          }
-        />
-      ))}
-
-      {status === 'submitted' &&
-        messages.length > 0 &&
-        messages[messages.length - 1].role === 'user' && <ThinkingMessage />}
-
-      <motion.div
-        ref={messagesEndRef}
-        className="shrink-0 min-w-[24px] min-h-[24px]"
-        onViewportLeave={onViewportLeave}
-        onViewportEnter={onViewportEnter}
-      />
-    </div>
+    <Conversation>
+      <ConversationContent>
+        {messages.map((message, index) => (
+          <Message key={message.id} from={message.role}>
+            <MessageContent>
+              {message.parts
+                .filter((part) => part.type === 'text')
+                .map((part, i) => (
+                  <Response key={`${message.id}-${i}`}>{part.text}</Response>
+                ))}
+            </MessageContent>
+          </Message>
+        ))}
+      </ConversationContent>
+      <ConversationScrollButton />
+    </Conversation>
   );
 }
 
